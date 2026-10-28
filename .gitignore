@@ -1,0 +1,28 @@
+# Зависимости
+node_modules/
+
+# Файлы сборки (создаются командой npm run build)
+dist/
+build/
+
+# Секреты и переменные окружения (ВАШ API-КЛЮЧ)
+.env
+.env.local
+key.env
+
+# База данных SQLite (сохраненные запросы погоды)
+*.db
+*.sqlite
+*.sqlite3
+
+# Логи
+*.log
+npm-debug.log*
+
+# Системные файлы ОС
+.DS_Store
+Thumbs.db
+
+# Настройки редакторов (VS Code / WebStorm)
+.vscode/
+.idea/
