@@ -68,3 +68,48 @@ dbReady.then(() => {
 }).catch((err) => {
   console.error('Не удалось запустить сервер из-за ошибки БД:', err);
 });
+// Новый эндпоинт для получения погоды по координатам
+app.get('/api/weather/coords', (req, res) => {
+  const { lat, lon } = req.query;
+  if (!lat || !lon) return res.status(400).json({ error: 'Укажите координаты' });
+
+  // Создаем ключ для кэша на основе координат (округляем, чтобы избежать лишних записей)
+  const cacheKey = `coords_${parseFloat(lat).toFixed(2)}_${parseFloat(lon).toFixed(2)}`;
+
+  // Проверяем кэш
+  db.get(
+    "SELECT * FROM weather_cache WHERE city = ? AND cached_at > datetime('now', '-1 day')",
+    [cacheKey],
+    async (err, row) => {
+      if (err) return res.status(500).json({ error: 'Ошибка БД' });
+
+      if (row) {
+        console.log(`[КЭШ] Отдаем данные для координат ${lat}, ${lon} из базы`);
+        return res.json(JSON.parse(row.data));
+      }
+
+      console.log(`[API] Запрашиваем свежие данные для координат ${lat}, ${lon}`);
+      try {
+        const weatherData = await weatherService.getForecast(parseFloat(lat), parseFloat(lon));
+        
+        // OpenWeatherMap по координатам не возвращает название города так же, как при поиске по имени.
+        // Мы можем попробовать получить его через обратное геокодирование, но для простоты оставим "Выбранная точка".
+        const responseData = {
+          location: { name: 'Выбранная точка', country: `${parseFloat(lat).toFixed(2)}, ${parseFloat(lon).toFixed(2)}` },
+          current: weatherData.current,
+          daily: weatherData.daily,
+        };
+
+        // Сохраняем в кэш
+        db.run(
+          "INSERT OR REPLACE INTO weather_cache (city, data, cached_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
+          [cacheKey, JSON.stringify(responseData)]
+        );
+
+        res.json(responseData);
+      } catch (apiError) {
+        res.status(500).json({ error: apiError.message });
+      }
+    }
+  );
+});
