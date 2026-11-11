@@ -1,18 +1,14 @@
-require('dotenv').config(); // Загружаем переменные из .env
+require('dotenv').config();
 const axios = require('axios');
 
 const API_KEY = process.env.OPENWEATHER_API_KEY;
 const GEO_BASE = 'http://api.openweathermap.org/geo/1.0';
 const WEATHER_BASE = 'https://api.openweathermap.org/data/2.5';
 
-// 1. Функция поиска координат (Геокодинг)
+// 1. Поиск координат по названию города
 async function getCoordinates(cityName) {
   const response = await axios.get(`${GEO_BASE}/direct`, {
-    params: {
-      q: cityName,
-      limit: 1,
-      appid: API_KEY,
-    },
+    params: { q: cityName, limit: 1, appid: API_KEY },
   });
 
   if (!response.data || response.data.length === 0) {
@@ -23,9 +19,25 @@ async function getCoordinates(cityName) {
   return { lat, lon, name, country };
 }
 
-// 2. Функция получения погоды по координатам
+// 2. Получение названия по координатам (обратный геокодинг)
+async function getLocationName(lat, lon) {
+  try {
+    const response = await axios.get(`${GEO_BASE}/reverse`, {
+      params: { lat, lon, limit: 1, appid: API_KEY, lang: 'ru' }
+    });
+    if (response.data && response.data.length > 0) {
+      const { name, country } = response.data[0];
+      return { name, country };
+    }
+    return { name: 'Неизвестная точка', country: '' };
+  } catch (error) {
+    console.error('Ошибка обратного геокодинга:', error.message);
+    return { name: 'Неизвестная точка', country: '' };
+  }
+}
+
+// 3. Получение прогноза погоды по координатам
 async function getForecast(lat, lon) {
-  // Запрашиваем текущую погоду и прогноз на 5 дней (с шагом 3 часа)
   const [currentRes, forecastRes] = await Promise.all([
     axios.get(`${WEATHER_BASE}/weather`, {
       params: { lat, lon, appid: API_KEY, units: 'metric', lang: 'ru' },
@@ -41,4 +53,4 @@ async function getForecast(lat, lon) {
   };
 }
 
-module.exports = { getCoordinates, getForecast };
+module.exports = { getCoordinates, getForecast, getLocationName };

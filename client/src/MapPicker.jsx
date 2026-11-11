@@ -24,7 +24,7 @@ function MapPicker({ onLocationSelect }) {
       const map = L.map(mapRef.current).setView([55.75, 37.62], 10); // Центр на Москве
 
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=cb1_4x5u_1_2eb862526fc351e2e6d0b00c', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        attribution: '© OpenStreetMap',
         subdomains: 'abcd',
         maxZoom: 20
       }).addTo(map);
